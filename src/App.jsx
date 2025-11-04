@@ -201,6 +201,96 @@ export default function App() {
       </div>
     </div>
   );
+        }                  className="generate-btn"
+                  onClick={handleGenerate}
+                  style={{ background: platformColor }}
+                >
+                  Generate
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="result-summary">
+            <div className="result-card">
+              <div className="result-left">
+                <div className="result-title">Result for Period</div>
+                <div className="result-period">{/* placeholder */}</div>
+              </div>
+              <div className="result-right">
+                <div className="big-number" style={{ borderColor: platformColor }}>
+                  {lastResult ?? "—"}
+                </div>
+                <div className="meta-row">
+                  <div className="meta-item">
+                    <div className="meta-label">Number</div>
+                    <div className="meta-value">{lastResult ?? "—"}</div>
+                  </div>
+                  <div className="meta-item">
+                    <div className="meta-label">Color</div>
+                    <div className="meta-value" style={{ color: platformColor }}>
+                      {mode === "mz" ? "MERAH" : "HIJAU"}
+                    </div>
+                  </div>
+                  <div className="meta-item">
+                    <div className="meta-label">Size</div>
+                    <div className="meta-value">{lastResult ? sizeLabel(lastResult) : "—"}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Latest Results */}
+        <div className="card">
+          <h3 className="card-title">Latest Results</h3>
+          <div className="latest-row">
+            {latest.length === 0 && <div className="muted">No results yet — generate a prediction.</div>}
+            {latest.map((n, i) => (
+              <div
+                key={i}
+                className="bubble"
+                style={{
+                  borderColor: n >= 50 ? "#ff7b7b" : "#7ee7a8",
+                  background: "rgba(255,255,255,0.02)",
+                }}
+              >
+                {n}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Smart Analysis */}
+        <div className="card">
+          <h3 className="card-title">Smart Analysis</h3>
+          <div className="analysis-row">
+            <div className="analysis-col">
+              <div className="analysis-title">Hot Numbers</div>
+              <div className="chips">
+                {stats.hot.length ? stats.hot.map((h) => (
+                  <div key={h} className="chip hot">{h}</div>
+                )) : <div className="muted">—</div>}
+              </div>
+            </div>
+            <div className="analysis-col">
+              <div className="analysis-title">Cold Numbers</div>
+              <div className="chips">
+                {stats.cold.length ? stats.cold.map((c) => (
+                  <div key={c} className="chip cold">{c}</div>
+                )) : <div className="muted">—</div>}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <footer className="footer">
+          <div>Mode active: <strong style={{ color: platformColor }}>{platformName}</strong></div>
+        </footer>
+      </div>
+    </div>
+  );
     }          fontSize: '16px',
           cursor: 'pointer'
         }}
