@@ -1,57 +1,124 @@
-:root{
-  --bg1:#f5f7ff;
+import React, { useState, useMemo } from 'react'
+import { ResponsiveContainer, BarChart, Bar, XAxis, Tooltip } from 'recharts'
+import './index.css'
+
+function sizeLabel(n){
+  const last = Number(String(n).slice(-1))
+  return last >= 5 ? 'BIG' : 'SMALL'
 }
-*{box-sizing:border-box;margin:0;padding:0}
-html,body,#root{height:100%}
-body{
-  font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-  background: linear-gradient(180deg,#6e58f5 0%, #6fa8f7 60%, #0f172a 100%);
-  color:#fff;
-  -webkit-font-smoothing:antialiased;
+
+function computeHotCold(latest){
+  const freq = {}
+  latest.forEach(n => { freq[n] = (freq[n]||0)+1 })
+  const entries = Object.entries(freq).sort((a,b)=>b[1]-a[1])
+  const hot = entries.slice(0,2).map(e=>e[0])
+  // cold: numbers 0-9 least frequent
+  const all = Array.from({length:10},(_,i)=>String(i))
+  const cold = all.map(k=>[k, freq[k]||0]).sort((a,b)=>a[1]-b[1]).slice(0,2).map(e=>e[0])
+  return { hot, cold }
 }
-.page-root{padding:26px 16px;display:flex;justify-content:center}
-.container{width:100%;max-width:920px}
 
-/* header */
-.top{text-align:center;margin-bottom:14px}
-.top h1{font-size:20px;color:#fff;letter-spacing:0.6px}
-.sub{color:rgba(255,255,255,0.85);font-size:13px;margin-top:6px}
+export default function App(){
+  const [mode, setMode] = useState('mz') // 'mz' or 'mys'
+  const [period, setPeriod] = useState('')
+  const [latest, setLatest] = useState([]) // newest first
+  const [last, setLast] = useState(null)
 
-/* card */
-.card{background:rgba(255,255,255,0.06);padding:16px;border-radius:12px;margin-bottom:14px;box-shadow:0 8px 24px rgba(2,6,23,0.5);border:1px solid rgba(255,255,255,0.03)}
-.control .row{display:flex;gap:18px;flex-wrap:wrap;align-items:flex-end;justify-content:space-between}
-.lbl{font-size:13px;color:rgba(255,255,255,0.8);margin-bottom:8px;display:block}
-.mode-switch{display:flex;gap:8px}
-.m-btn{padding:8px 12px;border-radius:10px;background:transparent;border:1px solid rgba(255,255,255,0.06);color:#fff;cursor:pointer;font-weight:700}
-.m-btn.active{background:rgba(255,255,255,0.03)}
+  const accent = mode === 'mz' ? '#ff3b3b' : '#22c55e'
+  const platformName = mode === 'mz' ? 'Mzplay' : 'Mysgame'
 
-/* input */
-.input-row{display:flex;gap:10px;align-items:center}
-.period{padding:10px 12px;border-radius:10px;border:1px solid rgba(255,255,255,0.06);background:transparent;color:#fff;width:120px}
-.generate{padding:10px 14px;border-radius:10px;border:none;color:#fff;font-weight:800;cursor:pointer}
+  const chartData = useMemo(()=>{
+    // show last 8 as chart values 0/1 for demonstration
+    return latest.slice(0,8).map((v,i)=>({ name: String(i+1), value: Number(v%10) }))
+  },[latest])
 
-/* result */
-.result-area{margin-top:14px;display:flex;gap:16px;align-items:center;flex-wrap:wrap}
-.result-left{flex:1}
-.big-num{width:96px;height:96px;border-radius:12px;border:3px solid #ff3b3b;display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:800;background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01))}
-.result-meta{display:flex;gap:14px;align-items:center}
-.meta{min-width:80px;text-align:center}
-.meta-label{font-size:12px;color:rgba(255,255,255,0.7);margin-bottom:6px}
-.meta-value{font-weight:800}
+  const handleGenerate = ()=>{
+    if(!/^\d{1,2}$/.test(period.trim())) { alert('Masukkan period 1-2 digit — contoh: 40'); return }
+    const base = Number(period)
+    const pred = mode === 'mz' ? ((base*7+13)%90)+1 : ((base*5+21)%90)+1
+    setLast(pred)
+    setLatest(prev => [pred, ...prev].slice(0,20))
+    setPeriod('')
+  }
 
-/* latest */
-.latest{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
-.bubble{min-width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff;border:2px solid rgba(255,255,255,0.06)}
+  const stats = computeHotCold(latest)
 
-/* analysis */
-.analysis{display:flex;gap:14px;flex-wrap:wrap}
-.a-col{flex:1}
-.a-title{color:rgba(255,255,255,0.8);margin-bottom:8px}
-.chips{display:flex;gap:8px;flex-wrap:wrap}
-.chip{padding:10px 12px;border-radius:8px;font-weight:800;color:#fff}
-.chip.hot{background:linear-gradient(90deg,#ff6b6b,#ff9a9a)}
-.chip.cold{background:linear-gradient(90deg,#60a5fa,#93c5fd)}
-.muted{color:rgba(255,255,255,0.6)}
+  return (
+    <div className="page-root">
+      <div className="container">
+        <header className="top">
+          <h1>WINGO — SMART AI VIP PREDICTOR</h1>
+          <p className="sub">Auto prediction • V15.5</p>
+        </header>
 
-/* footer */
-.foot{text-align:center;color:rgba(255,255,255,0.85);margin-top:8px}
+        <div className="card control">
+          <div className="row">
+            <div>
+              <label className="lbl">Platform</label>
+              <div className="mode-switch">
+                <button className={`m-btn ${mode==='mz'?'active':''}`} onClick={()=>setMode('mz')}>Mzplay</button>
+                <button className={`m-btn ${mode==='mys'?'active':''}`} onClick={()=>setMode('mys')}>Mysgame</button>
+              </div>
+            </div>
+
+            <div>
+              <label className="lbl">Enter Period (2 digits)</label>
+              <div className="input-row">
+                <input value={period} onChange={e=>setPeriod(e.target.value)} placeholder="e.g. 40" className="period" />
+                <button className="generate" style={{background:accent}} onClick={handleGenerate}>Generate</button>
+              </div>
+            </div>
+          </div>
+
+          <div className="result-area">
+            <div className="result-left">
+              <div className="result-title">Result for Period</div>
+              <div className="big-num" style={{borderColor:accent}}>{ last ?? '—' }</div>
+            </div>
+            <div className="result-meta">
+              <div className="meta">
+                <div className="meta-label">Number</div>
+                <div className="meta-value">{ last ?? '—' }</div>
+              </div>
+              <div className="meta">
+                <div className="meta-label">Color</div>
+                <div className="meta-value" style={{color:accent}}>{ mode==='mz' ? 'MERAH' : 'HIJAU' }</div>
+              </div>
+              <div className="meta">
+                <div className="meta-label">Size</div>
+                <div className="meta-value">{ last ? sizeLabel(last) : '—' }</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="card">
+          <h3 className="card-title">Latest Results</h3>
+          <div className="latest">
+            { latest.length===0 ? <div className="muted">No results yet — generate.</div> :
+              latest.map((n,i)=>(
+                <div key={i} className="bubble" style={{ borderColor: n%2? '#ff7b7b' : '#7ee7a8' }}>{n}</div>
+              ))
+            }
+          </div>
+        </div>
+
+        <div className="card">
+          <h3 className="card-title">Smart Analysis</h3>
+          <div className="analysis">
+            <div className="a-col">
+              <div className="a-title">Hot Numbers</div>
+              <div className="chips">{ stats.hot.length? stats.hot.map(h=> <div key={h} className="chip hot">{h}</div>) : <div className="muted">—</div> }</div>
+            </div>
+            <div className="a-col">
+              <div className="a-title">Cold Numbers</div>
+              <div className="chips">{ stats.cold.length? stats.cold.map(c=> <div key={c} className="chip cold">{c}</div>) : <div className="muted">—</div> }</div>
+            </div>
+          </div>
+        </div>
+
+        <footer className="foot">Mode active: <strong style={{color:accent}}>{platformName}</strong></footer>
+      </div>
+    </div>
+  )
+                }
