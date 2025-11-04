@@ -1,57 +1,124 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from 'react'
+import { ResponsiveContainer, BarChart, Bar, XAxis, Tooltip } from 'recharts'
+import './index.css'
 
-export default function App() {
-  const [input, setInput] = useState("");
-  const [mzPrediction, setMzPrediction] = useState(null);
-  const [mysPrediction, setMysPrediction] = useState(null);
+function sizeLabel(n){
+  const last = Number(String(n).slice(-1))
+  return last >= 5 ? 'BIG' : 'SMALL'
+}
 
-  const handlePredict = () => {
-    if (!input) return;
-    // Logik rawak simple
-    const mz = Math.floor(Math.random() * 90) + 10;
-    const mys = Math.floor(Math.random() * 90) + 10;
-    setMzPrediction(mz);
-    setMysPrediction(mys);
-  };
+function computeHotCold(latest){
+  const freq = {}
+  latest.forEach(n => { freq[n] = (freq[n]||0)+1 })
+  const entries = Object.entries(freq).sort((a,b)=>b[1]-a[1])
+  const hot = entries.slice(0,2).map(e=>e[0])
+  // cold: numbers 0-9 least frequent
+  const all = Array.from({length:10},(_,i)=>String(i))
+  const cold = all.map(k=>[k, freq[k]||0]).sort((a,b)=>a[1]-b[1]).slice(0,2).map(e=>e[0])
+  return { hot, cold }
+}
+
+export default function App(){
+  const [mode, setMode] = useState('mz') // 'mz' or 'mys'
+  const [period, setPeriod] = useState('')
+  const [latest, setLatest] = useState([]) // newest first
+  const [last, setLast] = useState(null)
+
+  const accent = mode === 'mz' ? '#ff3b3b' : '#22c55e'
+  const platformName = mode === 'mz' ? 'Mzplay' : 'Mysgame'
+
+  const chartData = useMemo(()=>{
+    // show last 8 as chart values 0/1 for demonstration
+    return latest.slice(0,8).map((v,i)=>({ name: String(i+1), value: Number(v%10) }))
+  },[latest])
+
+  const handleGenerate = ()=>{
+    if(!/^\d{1,2}$/.test(period.trim())) { alert('Masukkan period 1-2 digit — contoh: 40'); return }
+    const base = Number(period)
+    const pred = mode === 'mz' ? ((base*7+13)%90)+1 : ((base*5+21)%90)+1
+    setLast(pred)
+    setLatest(prev => [pred, ...prev].slice(0,20))
+    setPeriod('')
+  }
+
+  const stats = computeHotCold(latest)
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-black to-gray-900 flex flex-col items-center justify-center text-white font-sans">
-      <h1 className="text-3xl md:text-4xl font-bold mb-2 text-red-500">
-        🔥 SMART AI VIP PREDICTOR v14.5 🔥
-      </h1>
-      <p className="text-gray-300 mb-8 text-lg">Platform: Mzplay & Mysgame</p>
+    <div className="page-root">
+      <div className="container">
+        <header className="top">
+          <h1>WINGO — SMART AI VIP PREDICTOR</h1>
+          <p className="sub">Auto prediction • V15.5</p>
+        </header>
 
-      <input
-        type="number"
-        value={input}
-        onChange={(e) => setInput(e.target.value)}
-        placeholder="Masukkan nombor..."
-        className="p-3 rounded-xl text-black w-60 text-center text-lg focus:outline-none"
-      />
+        <div className="card control">
+          <div className="row">
+            <div>
+              <label className="lbl">Platform</label>
+              <div className="mode-switch">
+                <button className={`m-btn ${mode==='mz'?'active':''}`} onClick={()=>setMode('mz')}>Mzplay</button>
+                <button className={`m-btn ${mode==='mys'?'active':''}`} onClick={()=>setMode('mys')}>Mysgame</button>
+              </div>
+            </div>
 
-      <button
-        onClick={handlePredict}
-        className="mt-5 bg-gradient-to-r from-red-600 to-orange-500 hover:scale-105 transition-all px-6 py-3 rounded-2xl text-white font-semibold shadow-lg"
-      >
-        🔮 Predict Sekarang
-      </button>
+            <div>
+              <label className="lbl">Enter Period (2 digits)</label>
+              <div className="input-row">
+                <input value={period} onChange={e=>setPeriod(e.target.value)} placeholder="e.g. 40" className="period" />
+                <button className="generate" style={{background:accent}} onClick={handleGenerate}>Generate</button>
+              </div>
+            </div>
+          </div>
 
-      {mzPrediction !== null && mysPrediction !== null && (
-        <div className="mt-8 text-center space-y-3">
-          <p className="text-2xl font-semibold">
-            <span className="text-red-500">🎯 MZPLAY:</span>{" "}
-            <span className="text-red-400">{mzPrediction}</span>
-          </p>
-          <p className="text-2xl font-semibold">
-            <span className="text-green-400">💎 MYSGAME:</span>{" "}
-            <span className="text-green-300">{mysPrediction}</span>
-          </p>
+          <div className="result-area">
+            <div className="result-left">
+              <div className="result-title">Result for Period</div>
+              <div className="big-num" style={{borderColor:accent}}>{ last ?? '—' }</div>
+            </div>
+            <div className="result-meta">
+              <div className="meta">
+                <div className="meta-label">Number</div>
+                <div className="meta-value">{ last ?? '—' }</div>
+              </div>
+              <div className="meta">
+                <div className="meta-label">Color</div>
+                <div className="meta-value" style={{color:accent}}>{ mode==='mz' ? 'MERAH' : 'HIJAU' }</div>
+              </div>
+              <div className="meta">
+                <div className="meta-label">Size</div>
+                <div className="meta-value">{ last ? sizeLabel(last) : '—' }</div>
+              </div>
+            </div>
+          </div>
         </div>
-      )}
 
-      <footer className="mt-10 text-gray-500 text-sm">
-        © 2025 SMART AI VIP PREDICTOR | Powered by GPT
-      </footer>
+        <div className="card">
+          <h3 className="card-title">Latest Results</h3>
+          <div className="latest">
+            { latest.length===0 ? <div className="muted">No results yet — generate.</div> :
+              latest.map((n,i)=>(
+                <div key={i} className="bubble" style={{ borderColor: n%2? '#ff7b7b' : '#7ee7a8' }}>{n}</div>
+              ))
+            }
+          </div>
+        </div>
+
+        <div className="card">
+          <h3 className="card-title">Smart Analysis</h3>
+          <div className="analysis">
+            <div className="a-col">
+              <div className="a-title">Hot Numbers</div>
+              <div className="chips">{ stats.hot.length? stats.hot.map(h=> <div key={h} className="chip hot">{h}</div>) : <div className="muted">—</div> }</div>
+            </div>
+            <div className="a-col">
+              <div className="a-title">Cold Numbers</div>
+              <div className="chips">{ stats.cold.length? stats.cold.map(c=> <div key={c} className="chip cold">{c}</div>) : <div className="muted">—</div> }</div>
+            </div>
+          </div>
+        </div>
+
+        <footer className="foot">Mode active: <strong style={{color:accent}}>{platformName}</strong></footer>
+      </div>
     </div>
-  );
-}
+  )
+      }
